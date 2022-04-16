@@ -1,15 +1,11 @@
-use crate::scene;
 use crate::color;
 use alloc::string::String;
 use alloc::vec::Vec;
 use nx::result::*;
-use nx::mem;
 use nx::arm;
 use nx::gpu;
 use nx::service::hid;
 use nx::input;
-use nx::service::nv;
-use nx::service::vi;
 use core::ptr;
 use core::mem as cmem;
 
@@ -63,7 +59,7 @@ pub struct Renderer {
 }
 
 impl Renderer {
-    pub fn from<NS: nv::INvDrvService + 'static>(surface: &gpu::surface::Surface<NS>) -> Self {
+    pub fn from(surface: &gpu::surface::Surface) -> Self {
         let stride = surface.compute_stride();
         let width = surface.get_width();
         let height = surface.get_height();
@@ -77,7 +73,7 @@ impl Renderer {
         }
     }
 
-    pub fn start<NS: nv::INvDrvService + 'static>(&mut self, surface: &mut gpu::surface::Surface<NS>) -> Result<()> {
+    pub fn start(&mut self, surface: &mut gpu::surface::Surface) -> Result<()> {
         let (buf, buf_size, slot, _has_fences, fences) = surface.dequeue_buffer(true)?;
         self.gpu_buf = buf as *mut u32;
         self.gpu_buf_size = buf_size;
@@ -138,7 +134,7 @@ impl Renderer {
         }
     }
 
-    pub fn end<NS: nv::INvDrvService + 'static>(&mut self, surface: &mut gpu::surface::Surface<NS>) -> Result<()> {
+    pub fn end(&mut self, surface: &mut gpu::surface::Surface) -> Result<()> {
         Self::convert_buffers_impl(self.gpu_buf as *mut u8, self.linear_buf as *mut u8, self.stride, self.height);
         arm::cache_flush(self.gpu_buf as *mut u8, self.gpu_buf_size);
         surface.queue_buffer(self.slot, self.fences)?;
@@ -215,11 +211,11 @@ impl Renderer {
             }
         }
     }
-    
+
     pub fn draw_font_text(&mut self, font: &rusttype::Font, text: String, color: color::RGBA8, size: f32, x: i32, y: i32) {
         let scale = rusttype::Scale::uniform(size);
         let v_metrics = font.v_metrics(scale);
-        
+
         let mut tmp_y = y;
         for semi_text in text.lines() {
             self.draw_font_text_impl(font, semi_text, color, scale, v_metrics, x, tmp_y);
