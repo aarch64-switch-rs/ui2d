@@ -1,9 +1,8 @@
-use alloc::vec::Vec;
 use alloc::boxed::Box;
 use crate::render;
 use nx::input;
 
-pub struct Callback(Box<Fn()>);
+pub struct Callback(Box<dyn Fn()>);
 
 impl Callback {
     pub fn from<F: Fn() + 'static>(f: F) -> Self {
